@@ -46,7 +46,7 @@ public class Weka_decisionTree {
         return data;
     }
 
-    //Discretize
+    //Resample and Remove Attributes
     public Instances filterData(Instances data) throws Exception {
         //Kamus Lokal
         Resample filter = new Resample();
