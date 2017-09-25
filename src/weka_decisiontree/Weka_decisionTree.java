@@ -7,6 +7,7 @@ package weka_decisiontree;
 
 import classifier.MyID3;
 import classifier.MyJ48;
+import java.util.Enumeration;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.logging.Level;
@@ -17,6 +18,7 @@ import weka.classifiers.Classifier;
 import weka.core.Instances;
 import weka.classifiers.Evaluation;
 import weka.classifiers.trees.J48;
+import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.SerializationHelper;
 import weka.core.converters.ConverterUtils.DataSource;
@@ -40,12 +42,13 @@ public class Weka_decisionTree {
     public Weka_decisionTree() {
         scan = new Scanner(System.in);
     }
-    
+
     public boolean isHaveData() {
-        if (data != null) 
+        if (data != null) {
             return true;
-        else
+        } else {
             return false;
+        }
     }
 
     //Reader
@@ -108,7 +111,7 @@ public class Weka_decisionTree {
         try {
             //Kamus Lokal
             System.out.print("Jumlah Fold: ");
-            
+
             long seed = System.currentTimeMillis();
             int folds = scan.nextInt();
             int numInstances = this.data.numInstances();
@@ -156,7 +159,7 @@ public class Weka_decisionTree {
         try {
             double result = this.model.classifyInstance(newData);
             String result_string = newData.classAttribute().value((int) result);
-            
+
             return result_string;
         } catch (Exception ex) {
             Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
@@ -168,7 +171,7 @@ public class Weka_decisionTree {
         try {
             //Kamus Lokal
             Evaluation eval = new Evaluation(this.data);
-            
+
             //Algoritma
             eval.crossValidateModel(this.model, this.data, 10, new Random(1));
             System.out.println(eval.toSummaryString("======================Results======================\n", true));
@@ -179,11 +182,45 @@ public class Weka_decisionTree {
     }
 
     private void classifyInstance() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        try {
+            System.out.print("Masukan file yang akan diklasifikasi: ");
+            String filename = scan.nextLine();
+            Instances dataTest = DataSource.read(filename);
+            if (dataTest.classIndex() == -1) {
+                dataTest.setClassIndex(dataTest.numAttributes() - 1);
+            }
+            //Kamus Lokal
+            Evaluation eval = new Evaluation(this.data);
+            //Algoritma
+            this.model.buildClassifier(this.data);
+            eval.evaluateModel(this.model, dataTest);
+            //Menampilkan di Layar
+            System.out.println();
+            System.out.println("====================Results===================");
+            System.out.println(eval.toSummaryString());
+            System.out.println(eval.toMatrixString());
+            System.out.println();
+        } catch (Exception ex) {
+            Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
     }
 
     private void removeAttributes() {
-        // TODO: Ongoing
+        int i = 0;
+        Enumeration<Attribute> attrb = this.data.enumerateAttributes();
+        while (attrb.hasMoreElements()) {
+            System.out.format("%d. %s\n", i, attrb.nextElement().name());
+            i++;
+        }
+        System.out.print("Attribute yang ingin anda hapus? ");
+        int removeIndex = scan.nextInt();
+        if(removeIndex >=0 && removeIndex < i) {
+            Remove rm = new Remove();
+            rm.setAttributeIndices(String.valueOf(removeIndex));
+        } else {
+            System.out.println("Tidak dapat menghapus.");
+        }
     }
 
     private void showHeaderFile() {
@@ -206,7 +243,7 @@ public class Weka_decisionTree {
                 Evaluation eval = new Evaluation(train);
                 //Algoritma
                 this.classifier.buildClassifier(train);
-                eval.evaluateModel(this.model, test);
+                eval.evaluateModel(this.classifier, test);
                 //Menampilkan di Layar
                 System.out.println();
                 System.out.println("====================Results===================");
@@ -233,7 +270,7 @@ public class Weka_decisionTree {
             Evaluation eval = new Evaluation(this.data);
             //Algoritma
             this.classifier.buildClassifier(this.data);
-            eval.evaluateModel(this.model, dataTest);
+            eval.evaluateModel(this.classifier, dataTest);
             //Menampilkan di Layar
             System.out.println();
             System.out.println("====================Results===================");
@@ -370,9 +407,7 @@ public class Weka_decisionTree {
                     String filename2 = input.nextLine();
                     TW.readModel(filename2);
                     System.out.print("Berhasil dibaca!\n\n");
-                    //Evaluate
                     TW.evaluatesModel();
-                    //Pilihan
                     System.out.println();
                     break;
                 case 6:
