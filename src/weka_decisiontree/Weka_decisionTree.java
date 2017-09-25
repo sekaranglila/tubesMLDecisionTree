@@ -73,10 +73,14 @@ public class Weka_decisionTree {
         }
     }
 
-    public void saveModel(String filename) throws Exception {
+    public void saveModel(String filename) {
         //Kamus Lokal
         if (this.model != null) {
-            SerializationHelper.write(filename, new Object[]{this.model, this.headerData});
+            try {
+                SerializationHelper.write(filename, new Object[]{this.model, this.headerData});
+            } catch (Exception ex) {
+                Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } else {
             System.out.println("Belum ada model. Tidak ada yang disimpan.");
         }
