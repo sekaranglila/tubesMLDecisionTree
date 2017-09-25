@@ -40,6 +40,13 @@ public class Weka_decisionTree {
     public Weka_decisionTree() {
         scan = new Scanner(System.in);
     }
+    
+    public boolean isHaveData() {
+        if (data != null) 
+            return true;
+        else
+            return false;
+    }
 
     //Reader
     public void readData(String filename) {
@@ -76,86 +83,95 @@ public class Weka_decisionTree {
     }
 
     //Resample and Remove Attributes
-    public void filterData() throws Exception {
-        //Kamus Lokal
-        Resample filter = new Resample();
-        Instances filterRes;
-        Remove r = new Remove();
+    public void filterData() {
+        try {
+            //Kamus Lokal
+            Resample filter = new Resample();
+            Instances filterRes;
+            Remove r = new Remove();
 
-        //Algoritma
-        r.setInputFormat(this.data);
-        filterRes = Filter.useFilter(this.data, r);
+            //Algoritma
+            r.setInputFormat(this.data);
+            filterRes = Filter.useFilter(this.data, r);
 
-        this.data = filterRes;
-    }
-
-    public void skemaTenFolds() throws Exception {
-        //Kamus Lokal
-        System.out.print("Jumlah Fold: ");
-
-        long seed = System.currentTimeMillis();
-        int folds = scan.nextInt();
-        int numInstances = this.data.numInstances();
-        if (folds > numInstances) {
-            folds = numInstances;
-            System.out.println("Folds using maximum instance");
-        } else {
-            folds = 2;
-            System.out.println("Folds using minimum folds.");
+            this.data = filterRes;
+        } catch (Exception ex) {
+            Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
         }
-        Random rand = new Random(seed);
-        Instances randData = new Instances(this.data);
+    }
 
-        //Algoritma
-        randData.randomize(rand);
-        //Stratify
-        if (randData.classAttribute().isNominal()) {
-            randData.stratify(folds);
+    public void skemaTenFolds() {
+        try {
+            //Kamus Lokal
+            System.out.print("Jumlah Fold: ");
+            
+            long seed = System.currentTimeMillis();
+            int folds = scan.nextInt();
+            int numInstances = this.data.numInstances();
+            if (folds > numInstances) {
+                folds = numInstances;
+                System.out.println("Folds using maximum instance");
+            } else {
+                folds = 2;
+                System.out.println("Folds using minimum folds.");
+            }
+            Random rand = new Random(seed);
+            Evaluation eval = new Evaluation(this.data);
+            this.classifier.buildClassifier(this.data);
+            eval.crossValidateModel(this.classifier, this.data, folds, rand);
+            //Menampilkan di Layar
+            System.out.println();
+            System.out.println(eval.toSummaryString("=== 10-fold-Cross-Validation ===", false));
+            System.out.println(eval.toMatrixString());
+            System.out.println();
+        } catch (Exception ex) {
+            Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
         }
-        Evaluation eval = new Evaluation(randData);
-        for (int n = 0; n < folds; n++) {
-            Instances train = randData.trainCV(folds, n);
-            Instances test = randData.testCV(folds, n);
-            this.model.buildClassifier(train);
-            eval.evaluateModel(this.model, test);
+
+    }
+
+    public void skemaFullTraining() {
+        try {
+            //Kamus Lokal
+            Evaluation eval = new Evaluation(this.data);
+            //Algoritma
+            this.classifier.buildClassifier(data);
+            eval.evaluateModel(this.classifier, data);
+            //Menampilkan di Layar
+            System.out.println();
+            System.out.println("====================Results===================");
+            System.out.println(eval.toSummaryString());
+            System.out.println(eval.toMatrixString());
+            System.out.println();
+        } catch (Exception ex) {
+            Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
         }
-        //Menampilkan di Layar
-        System.out.println();
-        System.out.println(eval.toSummaryString("=== 10-fold-Cross-Validation ===", false));
-        System.out.println(eval.toMatrixString());
-        System.out.println();
-
     }
 
-    public void skemaFullTraining() throws Exception {
-        //Kamus Lokal
-        Evaluation eval = new Evaluation(this.data);
-        //Algoritma
-        this.model.buildClassifier(data);
-        eval.evaluateModel(this.model, data);
-        //Menampilkan di Layar
-        System.out.println();
-        System.out.println("====================Results===================");
-        System.out.println(eval.toSummaryString());
-        System.out.println(eval.toMatrixString());
-        System.out.println();
+    public String classify(Instance newData) {
+        try {
+            double result = this.model.classifyInstance(newData);
+            String result_string = newData.classAttribute().value((int) result);
+            
+            return result_string;
+        } catch (Exception ex) {
+            Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return "";
     }
 
-    public String classify(Instance newData) throws Exception {
-        double result = this.model.classifyInstance(newData);
-        String result_string = newData.classAttribute().value((int) result);
-
-        return result_string;
-    }
-
-    public void evaluatesModel() throws Exception {
-        //Kamus Lokal
-        Evaluation eval = new Evaluation(this.data);
-
-        //Algoritma
-        eval.crossValidateModel(this.model, this.data, 10, new Random(1));
-        System.out.println(eval.toSummaryString("======================Results======================\n", true));
-        System.out.println(eval.fMeasure(1) + " " + eval.recall(1));
+    public void evaluatesModel() {
+        try {
+            //Kamus Lokal
+            Evaluation eval = new Evaluation(this.data);
+            
+            //Algoritma
+            eval.crossValidateModel(this.model, this.data, 10, new Random(1));
+            System.out.println(eval.toSummaryString("======================Results======================\n", true));
+            System.out.println(eval.fMeasure(1) + " " + eval.recall(1));
+        } catch (Exception ex) {
+            Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     private void classifyInstance() {
@@ -182,10 +198,10 @@ public class Weka_decisionTree {
                 int trainSize = (int) Math.round(this.data.numInstances() * percent / 100.0);
                 int testSize = this.data.numInstances() - trainSize;
                 Instances train = new Instances(this.data, 0, trainSize);
-                Instances test = new Instances(this.data, trainSize, testSize); 
+                Instances test = new Instances(this.data, trainSize, testSize);
                 Evaluation eval = new Evaluation(train);
                 //Algoritma
-                this.model.buildClassifier(train);
+                this.classifier.buildClassifier(train);
                 eval.evaluateModel(this.model, test);
                 //Menampilkan di Layar
                 System.out.println();
@@ -212,7 +228,7 @@ public class Weka_decisionTree {
             //Kamus Lokal
             Evaluation eval = new Evaluation(this.data);
             //Algoritma
-            this.model.buildClassifier(this.data);
+            this.classifier.buildClassifier(this.data);
             eval.evaluateModel(this.model, dataTest);
             //Menampilkan di Layar
             System.out.println();
@@ -263,16 +279,16 @@ public class Weka_decisionTree {
 
         switch (pilihan) {
             case 1:
-                this.model = new MyID3();
+                this.classifier = new MyID3();
                 break;
             case 2:
-                this.model = new MyJ48();
+                this.classifier = new MyJ48();
                 break;
             case 3:
-                this.model = new J48();
+                this.classifier = new J48();
                 break;
             default:
-                this.model = new ID3();
+                this.classifier = new ID3();
                 break;
         }
     }
@@ -281,7 +297,7 @@ public class Weka_decisionTree {
      * @param args the command line arguments
      * @throws java.lang.Exception
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         //Kamus
         Weka_decisionTree TW = new Weka_decisionTree();
         Scanner input = new Scanner(System.in);
@@ -296,9 +312,10 @@ public class Weka_decisionTree {
         System.out.println();
         System.out.println("Membaca File");
         System.out.print("Masukkan nama file: ");
-        String filename = input.nextLine();
-        TW.readData(filename);
-
+        while (!TW.isHaveData()) {
+            String filename = input.nextLine();
+            TW.readData(filename);
+        }
         TW.showHeaderFile();
 
         //Discretize
