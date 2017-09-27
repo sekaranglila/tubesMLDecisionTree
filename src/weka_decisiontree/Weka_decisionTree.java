@@ -37,7 +37,7 @@ public class Weka_decisionTree {
     private Instances headerData;
     private Classifier classifier;
     private Classifier model;
-    private Scanner scan;
+    private final Scanner scan;
 
     public Weka_decisionTree() {
         scan = new Scanner(System.in);
@@ -118,13 +118,14 @@ public class Weka_decisionTree {
             if (folds > numInstances) {
                 folds = numInstances;
                 System.out.println("Folds using maximum instance");
-            } else {
+            } else if (folds < 2) {
                 folds = 2;
                 System.out.println("Folds using minimum folds.");
             }
             Random rand = new Random(seed);
             Evaluation eval = new Evaluation(this.data);
             this.classifier.buildClassifier(this.data);
+            this.model = this.classifier;
             eval.crossValidateModel(this.classifier, this.data, folds, rand);
             //Menampilkan di Layar
             System.out.println();
@@ -143,6 +144,7 @@ public class Weka_decisionTree {
             Evaluation eval = new Evaluation(this.data);
             //Algoritma
             this.classifier.buildClassifier(data);
+            this.model = this.classifier;
             eval.evaluateModel(this.classifier, data);
             //Menampilkan di Layar
             System.out.println();
@@ -152,6 +154,60 @@ public class Weka_decisionTree {
             System.out.println();
         } catch (Exception ex) {
             Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    private void splitTest() {
+        try {
+            System.out.print("Masukan berapa persen yang akan digunakan: ");
+            int percent = scan.nextInt();
+            if (percent > 0 && percent < 100) {
+                int trainSize = (int) Math.round(this.data.numInstances() * percent / 100.0);
+                int testSize = this.data.numInstances() - trainSize;
+                Instances train = new Instances(this.data, 0, trainSize);
+                Instances test = new Instances(this.data, trainSize, testSize);
+                Evaluation eval = new Evaluation(train);
+                //Algoritma
+                this.classifier.buildClassifier(train);
+                this.model = this.classifier;
+                eval.evaluateModel(this.classifier, test);
+                //Menampilkan di Layar
+                System.out.println();
+                System.out.println("====================Results===================");
+                System.out.println(eval.toSummaryString());
+                System.out.println(eval.toMatrixString());
+                System.out.println();
+            } else {
+                System.out.println("Persen harus diantara 0-100");
+            }
+        } catch (Exception ex) {
+            Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    private void skemaTestSet() {
+        try {
+            System.out.print("Masukan file test: ");
+            String filename = scan.nextLine();
+            Instances dataTest = DataSource.read(filename);
+            if (dataTest.classIndex() == -1) {
+                dataTest.setClassIndex(dataTest.numAttributes() - 1);
+            }
+            //Kamus Lokal
+            Evaluation eval = new Evaluation(this.data);
+            //Algoritma
+            this.classifier.buildClassifier(this.data);
+            this.model = this.classifier;
+            eval.evaluateModel(this.classifier, dataTest);
+            //Menampilkan di Layar
+            System.out.println();
+            System.out.println("====================Results===================");
+            System.out.println(eval.toSummaryString());
+            System.out.println(eval.toMatrixString());
+            System.out.println();
+        } catch (Exception ex) {
+            Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("File tidak dapat dibuka.");
         }
     }
 
@@ -215,7 +271,7 @@ public class Weka_decisionTree {
         }
         System.out.print("Attribute yang ingin anda hapus? ");
         int removeIndex = scan.nextInt();
-        if(removeIndex >=0 && removeIndex < i) {
+        if (removeIndex >= 0 && removeIndex < i) {
             Remove rm = new Remove();
             rm.setAttributeIndices(String.valueOf(removeIndex));
         } else {
@@ -229,58 +285,6 @@ public class Weka_decisionTree {
         System.out.print("Header File: \n");
         System.out.println(this.headerData);
         System.out.println();
-    }
-
-    private void splitTest() {
-        try {
-            System.out.print("Masukan berapa persen yang akan digunakan: ");
-            int percent = scan.nextInt();
-            if (percent > 0 && percent < 100) {
-                int trainSize = (int) Math.round(this.data.numInstances() * percent / 100.0);
-                int testSize = this.data.numInstances() - trainSize;
-                Instances train = new Instances(this.data, 0, trainSize);
-                Instances test = new Instances(this.data, trainSize, testSize);
-                Evaluation eval = new Evaluation(train);
-                //Algoritma
-                this.classifier.buildClassifier(train);
-                eval.evaluateModel(this.classifier, test);
-                //Menampilkan di Layar
-                System.out.println();
-                System.out.println("====================Results===================");
-                System.out.println(eval.toSummaryString());
-                System.out.println(eval.toMatrixString());
-                System.out.println();
-            } else {
-                System.out.println("Persen harus diantara 0-100");
-            }
-        } catch (Exception ex) {
-            Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
-    private void skemaTestSet() {
-        try {
-            System.out.print("Masukan file test: ");
-            String filename = scan.nextLine();
-            Instances dataTest = DataSource.read(filename);
-            if (dataTest.classIndex() == -1) {
-                dataTest.setClassIndex(dataTest.numAttributes() - 1);
-            }
-            //Kamus Lokal
-            Evaluation eval = new Evaluation(this.data);
-            //Algoritma
-            this.classifier.buildClassifier(this.data);
-            eval.evaluateModel(this.classifier, dataTest);
-            //Menampilkan di Layar
-            System.out.println();
-            System.out.println("====================Results===================");
-            System.out.println(eval.toSummaryString());
-            System.out.println(eval.toMatrixString());
-            System.out.println();
-        } catch (Exception ex) {
-            Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
-            System.out.println("File tidak dapat dibuka.");
-        }
     }
 
     public int Option() {
