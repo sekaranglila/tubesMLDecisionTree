@@ -271,7 +271,7 @@ public class Weka_decisionTree {
 
     private void removeAttributes() {
         int i = 0;
-        Enumeration<Attribute> attrb = this.data.enumerateAttributes();
+        Enumeration<Attribute> attrb = this.filteredData.enumerateAttributes();
         while (attrb.hasMoreElements()) {
             System.out.format("%d. %s\n", i, attrb.nextElement().name());
             i++;
@@ -279,8 +279,14 @@ public class Weka_decisionTree {
         System.out.print("Attribute yang ingin anda hapus? ");
         int removeIndex = scan.nextInt();
         if (removeIndex >= 0 && removeIndex < i) {
-            Remove rm = new Remove();
-            rm.setAttributeIndices(String.valueOf(removeIndex));
+            try {
+                Remove rm = new Remove();
+                rm.setAttributeIndices(String.valueOf(removeIndex));
+                rm.setInputFormat(this.filteredData);
+                this.filteredData = Filter.useFilter(this.filteredData, rm);
+            } catch (Exception ex) {
+                Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } else {
             System.out.println("Tidak dapat menghapus.");
         }
@@ -337,7 +343,6 @@ public class Weka_decisionTree {
             case 2:
                 this.classifier = new MyJ48();
                 filterData();
-
                 break;
             case 3:
                 this.classifier = new J48();
