@@ -23,6 +23,7 @@ import weka.core.Instance;
 import weka.core.SerializationHelper;
 import weka.core.converters.ConverterUtils.DataSource;
 import weka.filters.Filter;
+import weka.filters.supervised.attribute.Discretize;
 import weka.filters.supervised.instance.Resample;
 import weka.filters.unsupervised.attribute.Remove;
 
@@ -34,6 +35,7 @@ import weka.filters.unsupervised.attribute.Remove;
 public class Weka_decisionTree {
 
     private Instances data;
+    private Instances filteredData;
     private Instances headerData;
     private Classifier classifier;
     private Classifier model;
@@ -44,11 +46,7 @@ public class Weka_decisionTree {
     }
 
     public boolean isHaveData() {
-        if (data != null) {
-            return true;
-        } else {
-            return false;
-        }
+        return data != null;
     }
 
     //Reader
@@ -94,14 +92,23 @@ public class Weka_decisionTree {
         try {
             //Kamus Lokal
             Resample filter = new Resample();
-            Instances filterRes;
-            Remove r = new Remove();
 
             //Algoritma
-            r.setInputFormat(this.data);
-            filterRes = Filter.useFilter(this.data, r);
+            filter.setInputFormat(this.data);
+            this.filteredData = Filter.useFilter(this.data, filter);
 
-            this.data = filterRes;
+        } catch (Exception ex) {
+            Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public void discretize() {
+        try {
+            Discretize discret = new Discretize();
+
+            //Algoritma
+            discret.setInputFormat(this.data);
+            this.filteredData = Filter.useFilter(this.data, discret);
         } catch (Exception ex) {
             Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -114,7 +121,7 @@ public class Weka_decisionTree {
 
             long seed = System.currentTimeMillis();
             int folds = scan.nextInt();
-            int numInstances = this.data.numInstances();
+            int numInstances = this.filteredData.numInstances();
             if (folds > numInstances) {
                 folds = numInstances;
                 System.out.println("Folds using maximum instance");
@@ -123,10 +130,10 @@ public class Weka_decisionTree {
                 System.out.println("Folds using minimum folds.");
             }
             Random rand = new Random(seed);
-            Evaluation eval = new Evaluation(this.data);
-            this.classifier.buildClassifier(this.data);
+            Evaluation eval = new Evaluation(this.filteredData);
+            this.classifier.buildClassifier(this.filteredData);
             this.model = this.classifier;
-            eval.crossValidateModel(this.classifier, this.data, folds, rand);
+            eval.crossValidateModel(this.classifier, this.filteredData, folds, rand);
             //Menampilkan di Layar
             System.out.println();
             System.out.println(eval.toSummaryString("=== 10-fold-Cross-Validation ===", false));
@@ -141,11 +148,11 @@ public class Weka_decisionTree {
     public void skemaFullTraining() {
         try {
             //Kamus Lokal
-            Evaluation eval = new Evaluation(this.data);
+            Evaluation eval = new Evaluation(this.filteredData);
             //Algoritma
-            this.classifier.buildClassifier(data);
+            this.classifier.buildClassifier(filteredData);
             this.model = this.classifier;
-            eval.evaluateModel(this.classifier, data);
+            eval.evaluateModel(this.classifier, filteredData);
             //Menampilkan di Layar
             System.out.println();
             System.out.println("====================Results===================");
@@ -156,16 +163,16 @@ public class Weka_decisionTree {
             Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     private void splitTest() {
         try {
             System.out.print("Masukan berapa persen yang akan digunakan: ");
             int percent = scan.nextInt();
             if (percent > 0 && percent < 100) {
-                int trainSize = (int) Math.round(this.data.numInstances() * percent / 100.0);
+                int trainSize = (int) Math.round(this.filteredData.numInstances() * percent / 100.0);
                 int testSize = this.data.numInstances() - trainSize;
-                Instances train = new Instances(this.data, 0, trainSize);
-                Instances test = new Instances(this.data, trainSize, testSize);
+                Instances train = new Instances(this.filteredData, 0, trainSize);
+                Instances test = new Instances(this.filteredData, trainSize, testSize);
                 Evaluation eval = new Evaluation(train);
                 //Algoritma
                 this.classifier.buildClassifier(train);
@@ -194,9 +201,9 @@ public class Weka_decisionTree {
                 dataTest.setClassIndex(dataTest.numAttributes() - 1);
             }
             //Kamus Lokal
-            Evaluation eval = new Evaluation(this.data);
+            Evaluation eval = new Evaluation(this.filteredData);
             //Algoritma
-            this.classifier.buildClassifier(this.data);
+            this.classifier.buildClassifier(this.filteredData);
             this.model = this.classifier;
             eval.evaluateModel(this.classifier, dataTest);
             //Menampilkan di Layar
@@ -229,7 +236,7 @@ public class Weka_decisionTree {
             Evaluation eval = new Evaluation(this.data);
 
             //Algoritma
-            eval.crossValidateModel(this.model, this.data, 10, new Random(1));
+            eval.crossValidateModel(this.model, this.filteredData, 10, new Random(1));
             System.out.println(eval.toSummaryString("======================Results======================\n", true));
             System.out.println(eval.fMeasure(1) + " " + eval.recall(1));
         } catch (Exception ex) {
@@ -246,9 +253,9 @@ public class Weka_decisionTree {
                 dataTest.setClassIndex(dataTest.numAttributes() - 1);
             }
             //Kamus Lokal
-            Evaluation eval = new Evaluation(this.data);
+            Evaluation eval = new Evaluation(this.filteredData);
             //Algoritma
-            this.model.buildClassifier(this.data);
+            this.model.buildClassifier(this.filteredData);
             eval.evaluateModel(this.model, dataTest);
             //Menampilkan di Layar
             System.out.println();
@@ -325,15 +332,20 @@ public class Weka_decisionTree {
         switch (pilihan) {
             case 1:
                 this.classifier = new MyID3();
+                filterData();
                 break;
             case 2:
                 this.classifier = new MyJ48();
+                filterData();
+
                 break;
             case 3:
                 this.classifier = new J48();
+                filterData();
                 break;
             default:
                 this.classifier = new ID3();
+                discretize();
                 break;
         }
     }
@@ -365,7 +377,6 @@ public class Weka_decisionTree {
 
         //Discretize
         System.out.println("===============Resample==============");
-        TW.filterData();
 
         TW.showHeaderFile();
 
