@@ -5,7 +5,7 @@
  */
 package weka_decisiontree;
 
-import classifier.MyID3;
+import classifier.id3.MyID3;
 import classifier.MyJ48;
 import java.util.Enumeration;
 import java.util.Random;
@@ -357,7 +357,6 @@ public class Weka_decisionTree {
 
     /**
      * @param args the command line arguments
-     * @throws java.lang.Exception
      */
     public static void main(String[] args) {
         //Kamus
