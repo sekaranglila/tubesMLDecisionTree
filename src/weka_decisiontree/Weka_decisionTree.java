@@ -270,25 +270,22 @@ public class Weka_decisionTree {
     }
 
     private void removeAttributes() {
-        int i = 0;
         Enumeration<Attribute> attrb = this.filteredData.enumerateAttributes();
         while (attrb.hasMoreElements()) {
-            System.out.format("%d. %s\n", i, attrb.nextElement().name());
-            i++;
+            Attribute attribute = attrb.nextElement();
+            System.out.format("%d. %s\n", attribute.index(), attribute.name());
         }
         System.out.print("Attribute yang ingin anda hapus? ");
         int removeIndex = scan.nextInt();
-        if (removeIndex >= 0 && removeIndex < i) {
-            try {
-                Remove rm = new Remove();
-                rm.setAttributeIndices(String.valueOf(removeIndex));
-                rm.setInputFormat(this.filteredData);
-                this.filteredData = Filter.useFilter(this.filteredData, rm);
-            } catch (Exception ex) {
-                Logger.getLogger(Weka_decisionTree.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        } else {
-            System.out.println("Tidak dapat menghapus.");
+        try {
+            int[] index = new int[1];
+            index[0] = removeIndex;
+            Remove rm = new Remove();
+            rm.setAttributeIndicesArray(index);
+            rm.setInputFormat(this.filteredData);
+            this.filteredData = Filter.useFilter(this.filteredData, rm);
+        } catch (Exception ex) {
+            System.out.println("Tidak dapat menghapus. Index salah.");
         }
     }
 
@@ -307,16 +304,17 @@ public class Weka_decisionTree {
 
         //Algoritma
         System.out.println();
-        System.out.print("Tentukan apa yang ingin dilakukan: \n");
-        System.out.print("1. Skema 10-fold cross validation \n");
-        System.out.print("2. Skema Full Training \n");
-        System.out.print("3. Menguji dengan set test \n");
-        System.out.print("4. Percentage split\n");
-        System.out.print("5. Load Model \n");
-        System.out.print("6. Classify Instance \n");
-        System.out.print("7. Remove Attributes \n");
-        System.out.print("8. Exit \n");
-        System.out.print("Pilihan anda: ");
+        System.out.println("Tentukan apa yang ingin dilakukan:");
+        System.out.println("1. Skema 10-fold cross validation");
+        System.out.println("2. Skema Full Training");
+        System.out.println("3. Menguji dengan set test");
+        System.out.println("4. Percentage split");
+        System.out.println("5. Load Model");
+        System.out.println("6. Classify Instance");
+        System.out.println("7. Remove Attributes");
+        System.out.println("8. Ganti classifier. (Reset data)");
+        System.out.println("9. Exit");
+        System.out.println("Pilihan anda: ");
         pil1 = input.nextInt();
         return pil1;
     }
@@ -390,7 +388,7 @@ public class Weka_decisionTree {
         int pil = TW.Option();
 
         //Loop pilihan 2
-        while (pil != 8) {
+        while (pil != 9) {
             switch (pil) {
                 case 1:
                     //Skema CV 10 Folds
@@ -437,12 +435,14 @@ public class Weka_decisionTree {
                     // Remove Attribute
                     TW.removeAttributes();
                     break;
+                case 8:
+                    TW.chooseClassifier();
+                    break;
                 default:
                     //Error Message
                     System.out.println("Pilihan tidak valid!\n");
                     break;
             }
-            TW.chooseClassifier();
             pil = TW.Option();
         }
         //Exit
