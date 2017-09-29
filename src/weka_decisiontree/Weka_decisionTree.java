@@ -169,6 +169,7 @@ public class Weka_decisionTree {
             System.out.print("Masukan berapa persen yang akan digunakan: ");
             int percent = scan.nextInt();
             if (percent > 0 && percent < 100) {
+                this.filteredData.randomize(new java.util.Random(0));
                 int trainSize = (int) Math.round(this.filteredData.numInstances() * percent / 100.0);
                 int testSize = this.data.numInstances() - trainSize;
                 Instances train = new Instances(this.filteredData, 0, trainSize);
