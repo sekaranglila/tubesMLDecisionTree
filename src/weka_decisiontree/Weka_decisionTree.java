@@ -390,7 +390,7 @@ public class Weka_decisionTree {
         int pil = TW.Option();
 
         //Loop pilihan 2
-        while (pil != 6) {
+        while (pil != 8) {
             switch (pil) {
                 case 1:
                     //Skema CV 10 Folds
