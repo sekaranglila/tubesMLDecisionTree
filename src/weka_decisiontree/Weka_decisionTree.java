@@ -6,7 +6,7 @@
 package weka_decisiontree;
 
 import classifier.id3.MyID3;
-import classifier.MyJ48;
+import classifier.MyC45;
 import java.util.Enumeration;
 import java.util.Random;
 import java.util.Scanner;
@@ -329,8 +329,8 @@ public class Weka_decisionTree {
         System.out.println();
         System.out.print("Pilih Classifier: \n");
         System.out.print("1. myID3 \n");
-        System.out.print("2. myJ48 \n");
-        System.out.print("3. J48 - Weka \n");
+        System.out.print("2. myC45 \n");
+        System.out.print("3. C45 - Weka \n");
         System.out.print("4. ID3 - Weka \n");
         System.out.print("Pilihan anda (default ID3 Weka, another 1-4 will choose ID3 Weka) : ");
         pilihan = input.nextInt();
@@ -341,7 +341,7 @@ public class Weka_decisionTree {
                 discretize();
                 break;
             case 2:
-                this.classifier = new MyJ48();
+                this.classifier = new MyC45();
                 filterData();
                 break;
             case 3:
