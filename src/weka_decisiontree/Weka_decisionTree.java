@@ -133,6 +133,7 @@ public class Weka_decisionTree {
             Evaluation eval = new Evaluation(this.filteredData);
             this.classifier.buildClassifier(this.filteredData);
             this.model = this.classifier;
+            System.out.println(this.classifier);
             eval.crossValidateModel(this.classifier, this.filteredData, folds, rand);
             //Menampilkan di Layar
             System.out.println();

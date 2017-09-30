@@ -133,6 +133,15 @@ public class MyID3 extends AbstractClassifier {
     }
 
     private void makeTree(Instances instances) throws Exception {
+
+        // Check if no instances have reached this node.
+        if (instances.numInstances() == 0) {
+            m_Attribute = null;
+            m_ClassValue = Utils.missingValue();
+            m_Distribution = new double[instances.numClasses()];
+            return;
+        }
+        
         this.m_infoGainData = enumerateInfoGain(instances);
         this.m_Attribute = instances.attribute(Utils.maxIndex(m_infoGainData));
         if (Utils.eq(this.m_infoGainData[m_Attribute.index()], 0)) {
@@ -152,12 +161,7 @@ public class MyID3 extends AbstractClassifier {
             this.node = new MyID3[m_Attribute.numValues()];
             for (int j = 0; j < m_Attribute.numValues(); j++) {
                 this.node[j] = new MyID3();
-                if (exampleVi[j].numInstances() != 0) {
-                    node[j].buildClassifier(exampleVi[j]);
-                } else {
-                    node[j].m_Attribute = null;
-                    node[j].m_ClassValue = mostCommonValue(instances);
-                }
+                this.node[j].makeTree(exampleVi[j]);
             }
         }
     }
@@ -192,6 +196,44 @@ public class MyID3 extends AbstractClassifier {
             return this.node[(int) instance.value(m_Attribute)].
                     distributionForInstance(instance);
         }
+    }
+
+    @Override
+    public String toString() {
+
+        if ((m_Distribution == null) && (this.node == null)) {
+            return "Id3: No model built yet.";
+        }
+        return "Id3\n\n" + toString(0);
+    }
+
+    /**
+     * Outputs a tree at a certain level.
+     *
+     * @param level the level at which the tree is to be printed
+     * @return the tree as string at the given level
+     */
+    private String toString(int level) {
+
+        StringBuilder text = new StringBuilder();
+
+        if (m_Attribute == null) {
+            if (Utils.isMissingValue(m_ClassValue)) {
+                text.append(": null");
+            } else {
+                text.append(": ").append(m_ClassAttribute.value((int) m_ClassValue));
+            }
+        } else {
+            for (int j = 0; j < m_Attribute.numValues(); j++) {
+                text.append("\n");
+                for (int i = 0; i < level; i++) {
+                    text.append("|  ");
+                }
+                text.append(m_Attribute.name()).append(" = ").append(m_Attribute.value(j));
+                text.append(this.node[j].toString(level + 1));
+            }
+        }
+        return text.toString();
     }
 
 }
