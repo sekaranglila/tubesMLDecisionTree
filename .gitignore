@@ -22,9 +22,9 @@
 hs_err_pid*
 
 # Netbeans
-nbproject/private/
-build/
-nbbuild/
-dist/
-nbdist/
-.nb-gradle/
+nbproject/private/*
+build/*
+nbbuild/*
+dist/*
+nbdist/*
+.nb-gradle/*

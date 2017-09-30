@@ -337,7 +337,7 @@ public class Weka_decisionTree {
         switch (pilihan) {
             case 1:
                 this.classifier = new MyID3();
-                filterData();
+                discretize();
                 break;
             case 2:
                 this.classifier = new MyJ48();
