@@ -11,6 +11,8 @@ import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.Utils;
+import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.ReplaceMissingValues;
 
 /**
  *
@@ -19,18 +21,39 @@ import weka.core.Utils;
  */
 public class MyC45 extends AbstractClassifier {
 
-    @Override
-    public void buildClassifier(Instances data) throws Exception {
-        data = new Instances(data);
-        data.deleteWithMissingClass();
-        makeTree(data);
-    }
-    
-    private void makeTree(Instances data) throws Exception {
-        
-    }
-    
+    private MyC45[] node;
+
+    /**
+     * Class value if node is leaf.
+     */
+    private double m_ClassValue;
+
+    private double[] m_infoGainData;
+
+    /**
+     * Class distribution if node is leaf.
+     */
+    private double[] m_Distribution;
+
+    /**
+     * Attribute used for splitting.
+     */
+    private Attribute m_Attribute;
+
+    /**
+     * Class attribute of dataset.
+     */
+    private Attribute m_ClassAttribute;
+
+    /**
+     * Computes the entropy of a dataset.
+     *
+     * @param data the data for which entropy is to be computed
+     * @return the entropy of the data's class distribution
+     * @throws Exception if computation fails
+     */
     private double computeEntropy(Instances data) throws Exception {
+
         double[] classCounts = new double[data.numClasses()];
         Enumeration instEnum = data.enumerateInstances();
         while (instEnum.hasMoreElements()) {
@@ -46,7 +69,14 @@ public class MyC45 extends AbstractClassifier {
         entropy /= (double) data.numInstances();
         return entropy + Utils.log2(data.numInstances());
     }
-    
+
+    /**
+     * Splits a dataset according to the values of a nominal attribute.
+     *
+     * @param data the data which is to be split
+     * @param att the attribute to be used for splitting
+     * @return the sets of instances produced by the split
+     */
     private Instances[] splitData(Instances data, Attribute att) {
         Instances[] splitData = new Instances[att.numValues()];
         for (int j = 0; j < att.numValues(); j++) {
@@ -62,7 +92,7 @@ public class MyC45 extends AbstractClassifier {
         }
         return splitData;
     }
-    
+
     private double computeInfoGain(Instances data, Attribute attr) throws Exception {
         double infoGain = computeEntropy(data);
         Instances[] splitedInstances = splitData(data, attr);
@@ -75,7 +105,18 @@ public class MyC45 extends AbstractClassifier {
 
         return infoGain;
     }
-    
+
+    private double[] enumerateInfoGain(Instances data)
+            throws Exception {
+        double[] infoGains = new double[data.numAttributes()];
+        Enumeration<Attribute> attEnum = data.enumerateAttributes();
+        while (attEnum.hasMoreElements()) {
+            Attribute att = attEnum.nextElement();
+            infoGains[att.index()] = computeInfoGain(data, att);
+        }
+        return infoGains;
+    }
+
     private double mostCommonValue(Instances example) {
         int[] dataClass = new int[example.numClasses()];
         Enumeration<Instance> inst = example.enumerateInstances();
@@ -93,27 +134,121 @@ public class MyC45 extends AbstractClassifier {
         }
         return (double) mostCommonValue;
     }
-    
-    private double[] getMaxInfoGain(Instances data) throws Exception {
-        double[] maxIG = new double[2];
-        double infoGain;
-        double maxInfoGain = 0;
-        double i = 0;
-        
-        //Algoritma
-        Enumeration<Attribute> en = data.enumerateAttributes();
-        while (en.hasMoreElements()) {
-                Attribute attr = (Attribute) en.nextElement();
-                infoGain = computeInfoGain(data, attr);
-                if (maxInfoGain < infoGain) {
-                        maxInfoGain = infoGain;
-                        i = attr.index();
-                }
+
+    private void makeTree(Instances instances) throws Exception {
+
+        // Check if no instances have reached this node.
+        if (instances.numInstances() == 0) {
+            m_Attribute = null;
+            m_ClassValue = Utils.missingValue();
+            m_Distribution = new double[instances.numClasses()];
+            return;
         }
         
-        maxIG[0] = i;
-        maxIG[1] = maxInfoGain;
-        return maxIG;
+        this.m_infoGainData = enumerateInfoGain(instances);
+        this.m_Attribute = instances.attribute(Utils.maxIndex(m_infoGainData));
+        if (Utils.eq(this.m_infoGainData[m_Attribute.index()], 0)) {
+            // Max Info Gain = 0
+            m_Attribute = null;
+            m_Distribution = new double[instances.numClasses()];
+            Enumeration instEnum = instances.enumerateInstances();
+            while (instEnum.hasMoreElements()) {
+                Instance inst = (Instance) instEnum.nextElement();
+                m_Distribution[(int) inst.classValue()]++;
+            }
+            Utils.normalize(m_Distribution);
+            m_ClassValue = mostCommonValue(instances);
+            m_ClassAttribute = instances.classAttribute();
+        } else {
+            Instances[] exampleVi = splitData(instances, m_Attribute);
+            this.node = new MyC45[m_Attribute.numValues()];
+            for (int j = 0; j < m_Attribute.numValues(); j++) {
+                this.node[j] = new MyC45();
+                this.node[j].makeTree(exampleVi[j]);
+            }
+        }
     }
     
+    private Instances replaceMissingValues(Instances data) throws Exception {
+        Instances replacedData;
+        ReplaceMissingValues filter = new ReplaceMissingValues();
+
+        filter.setInputFormat(data);
+        replacedData = Filter.useFilter(data, filter);
+
+        return replacedData;
+    }
+
+    //Masih harus di edit
+    @Override
+    public void buildClassifier(Instances i) throws Exception {
+        i = new Instances(i);
+        i.deleteWithMissingClass();
+        makeTree(i);
+    }
+
+    @Override
+    public double classifyInstance(Instance instance) throws Exception {
+        if (this.m_ClassAttribute == null) {
+            return this.m_ClassValue;
+        } else {
+            return this.node[(int) instance.value(this.m_ClassAttribute)].classifyInstance(instance);
+        }
+    }
+
+    /**
+     * Computes class distribution for instance using decision tree.
+     *
+     * @param instance the instance for which distribution is to be computed
+     * @return the class distribution for the given instance
+     */
+    @Override
+    public double[] distributionForInstance(Instance instance) {
+        if (m_Attribute == null) {
+            return m_Distribution;
+        } else {
+            return this.node[(int) instance.value(m_Attribute)].
+                    distributionForInstance(instance);
+        }
+    }
+
+    @Override
+    public String toString() {
+
+        if ((m_Distribution == null) && (this.node == null)) {
+            return "C45: No model built yet.";
+        }
+        return "C45\n\n" + toString(0);
+    }
+
+    /**
+     * Outputs a tree at a certain level.
+     *
+     * @param level the level at which the tree is to be printed
+     * @return the tree as string at the given level
+     */
+    private String toString(int level) {
+
+        StringBuilder text = new StringBuilder();
+
+        //Masih harus di benerin
+        if (m_Attribute == null) {
+            if (Utils.isMissingValue(m_ClassValue)) {
+                text.append(": null");
+            } else {
+                text.append(": ").append(m_ClassAttribute.value((int) m_ClassValue));
+            }
+        } else {
+            for (int j = 0; j < m_Attribute.numValues(); j++) {
+                text.append("\n");
+                for (int i = 0; i < level; i++) {
+                    text.append("|  ");
+                }
+                text.append(m_Attribute.name()).append(" = ").append(m_Attribute.value(j));
+                text.append(this.node[j].toString(level + 1));
+            }
+        }
+        return text.toString();
+    }
+
 }
