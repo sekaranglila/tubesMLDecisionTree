@@ -184,6 +184,7 @@ public class MyC45 extends AbstractClassifier {
     public void buildClassifier(Instances i) throws Exception {
         i = new Instances(i);
         i.deleteWithMissingClass();
+        i = replaceMissingValues(i);
         makeTree(i);
     }
 
