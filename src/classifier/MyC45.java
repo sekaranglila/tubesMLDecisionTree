@@ -493,11 +493,9 @@ public class MyC45 extends AbstractClassifier {
     private void pruneTree(Instances data) {
         
         if (this.node != null) {
-            // Copy current model to a test model
             // Test and current model will be compared later
             // Test model is a pruned current model (no further child, leaf is most common value
             MyC45 testModel = new MyC45();
-            testModel = this;
             testModel.node = null;
             testModel.m_ClassValue = mostCommonValue(data);
             
