@@ -8,6 +8,8 @@ package classifier;
 import java.util.Enumeration;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.trees.j48.Distribution;
+import weka.classifiers.trees.j48.GainRatioSplitCrit;
+import weka.classifiers.trees.j48.InfoGainSplitCrit;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -49,6 +51,16 @@ public class MyC45 extends AbstractClassifier {
     private double m_splitPoint = Double.MAX_VALUE;
     
     private double m_sumOfWeights;
+    
+    private double m_infoGain;
+    
+    private static InfoGainSplitCrit infoGainCrit = new InfoGainSplitCrit();
+    
+    private static GainRatioSplitCrit gainRatioCrit = new GainRatioSplitCrit();
+    
+    private double m_gainRatio = 0;
+    
+    private int m_minNoObj = 2;
 
     /**
      * Computes the entropy of a dataset.
@@ -215,7 +227,7 @@ public class MyC45 extends AbstractClassifier {
     public void buildClassifier(Instances i) throws Exception {
         i = new Instances(i);
         i.deleteWithMissingClass();
-        replaceMissingValues(i);
+        i = replaceMissingValues(i);
         makeTree(i);
     }
 
@@ -283,12 +295,14 @@ public class MyC45 extends AbstractClassifier {
         return text.toString();
     }
     
-    private void replaceMissingValues(Instances data) throws Exception {
+    private Instances replaceMissingValues(Instances data) throws Exception {
         Instances replacedData;
         ReplaceMissingValues filter = new ReplaceMissingValues();
 
         filter.setInputFormat(data);
         replacedData = Filter.useFilter(data, filter);
+        
+        return replacedData;
     }
     
     private void splitContinuousValue(Instances data) throws Exception{
@@ -305,6 +319,7 @@ public class MyC45 extends AbstractClassifier {
         Distribution m_dist;
         m_sumOfWeights = data.sumOfWeights();
         int m_index = 0;
+        m_infoGain = 0;
 
         //Algoritma
         // Current attribute is a numeric attribute.
@@ -351,7 +366,7 @@ public class MyC45 extends AbstractClassifier {
             // values for criteria.
             if (Utils.grOrEq(m_dist.perBag(0),minSplit) && Utils.grOrEq(m_dist.perBag(1),minSplit)) {
               currentInfoGain = infoGainCrit.splitCritValue(m_dist,m_sumOfWeights,defaultEnt);
-              if (Utils.gr(currentInfoGain,m_infoGain)) {
+              if (Utils.gr(currentInfoGain, m_infoGain)) {
                 m_infoGain = currentInfoGain;
                 splitIndex = next-1;
               }
