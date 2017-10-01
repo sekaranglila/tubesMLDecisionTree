@@ -47,6 +47,8 @@ public class MyC45 extends AbstractClassifier {
     private Attribute m_ClassAttribute;
     
     private double m_splitPoint = Double.MAX_VALUE;
+    
+    private double m_sumOfWeights;
 
     /**
      * Computes the entropy of a dataset.
@@ -301,6 +303,8 @@ public class MyC45 extends AbstractClassifier {
         Instance instance;
         int i;
         Distribution m_dist;
+        m_sumOfWeights = data.sumOfWeights();
+        int m_index = 0;
 
         //Algoritma
         // Current attribute is a numeric attribute.
@@ -370,7 +374,7 @@ public class MyC45 extends AbstractClassifier {
         }
 
         // Set instance variables' values to values for best split.
-        m_numSubsets = 2;
+        int m_numSubsets = 2;
         m_splitPoint =  (data.instance(splitIndex+1).value(m_Attribute.index()) + data.instance(splitIndex).value(m_Attribute.index()))/2;
 
         // In case we have a numerical precision problem we need to choose the
