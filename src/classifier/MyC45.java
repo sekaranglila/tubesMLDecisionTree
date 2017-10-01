@@ -105,7 +105,16 @@ public class MyC45 extends AbstractClassifier {
 
         return infoGain;
     }
-
+    
+    private double computeSplitInformation(Instances data, Attribute attr) {
+    // Basically ngitung entropi kelas
+        return 0.0;
+    }
+    
+    private double computeGainRatio(Instances data, Attribute attr) {
+    // Info gain/Split information
+        return 0.0;
+    }
     private double[] enumerateInfoGain(Instances data)
             throws Exception {
         double[] infoGains = new double[data.numAttributes()];
@@ -251,5 +260,20 @@ public class MyC45 extends AbstractClassifier {
         }
         return text.toString();
     }
-
+    
+    private void replaceMissingValue(Instances data) {
+    // Replace jadi most common value
+    
+    }
+    
+    private void splitContinuousValue(Instances data) {
+    // didescretize aja gabole ya
+    // defaultnya pake binary split yang di binc45 something itu
+    }
+    
+    private void pruneTree(Instances data) {
+        
+    }
+    
+    // Error handling masih belom gt ngerti soalnya ada beberapa jenisnya
 }
