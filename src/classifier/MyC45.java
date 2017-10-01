@@ -108,13 +108,30 @@ public class MyC45 extends AbstractClassifier {
     
     private double computeSplitInformation(Instances data, Attribute attr) {
     // Basically ngitung entropi kelas
-        return 0.0;
+        Instances[] splitedInstances = splitData(data, attr);
+        double splitInfo = 0.0;
+                
+        for (int i = 0; i < attr.numValues(); i++) {
+            if (splitedInstances[i].numInstances() > 0) {
+                double attrRatio = splitedInstances[i].numInstances() / (double) data.numInstances() ;
+                splitInfo -=  attrRatio * Utils.log2(attrRatio);
+            }
+        }
+        
+        return splitInfo;
     }
     
-    private double computeGainRatio(Instances data, Attribute attr) {
+    private double computeGainRatio(Instances data, Attribute attr) throws Exception {
     // Info gain/Split information
-        return 0.0;
+        double infoGain = computeInfoGain(data, attr);
+        double splitInfo = computeSplitInformation(data, attr);
+        if (splitInfo == 0.0) {
+            return Double.NEGATIVE_INFINITY;
+        } else {
+            return infoGain / splitInfo;
+        }
     }
+    
     private double[] enumerateInfoGain(Instances data)
             throws Exception {
         double[] infoGains = new double[data.numAttributes()];
@@ -126,6 +143,16 @@ public class MyC45 extends AbstractClassifier {
         return infoGains;
     }
 
+    private double[] enumerateGainRatio(Instances data)
+            throws Exception {
+        double[] gainRatios = new double[data.numAttributes()];
+        Enumeration<Attribute> attEnum = data.enumerateAttributes();
+        while (attEnum.hasMoreElements()) {
+            Attribute att = attEnum.nextElement();
+            gainRatios[att.index()] = computeGainRatio(data, att);
+        }
+        return gainRatios;
+    }
     private double mostCommonValue(Instances example) {
         int[] dataClass = new int[example.numClasses()];
         Enumeration<Instance> inst = example.enumerateInstances();
