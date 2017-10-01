@@ -69,7 +69,9 @@ public class MyC45 extends AbstractClassifier {
     private static GainRatioSplitCrit gainRatioCrit = new GainRatioSplitCrit();
 
     private double m_gainRatio = 0;
-
+    
+    private double[] m_gainRatioData;
+    
     private int m_minNoObj = 2;
 
     /**
@@ -155,16 +157,19 @@ public class MyC45 extends AbstractClassifier {
         if (splitInfo == 0.0) {
             return Double.NEGATIVE_INFINITY;
         } else {
-            return infoGain / splitInfo;
+            System.out.println("IG: " + infoGain + "GR: " + (infoGain/splitInfo));
+            return ( infoGain / splitInfo );
         }
     }
 
     private double[] enumerateInfoGain(Instances data)
             throws Exception {
+        System.out.println("=================ENUMERATE INFO GAIN=============");
         double[] infoGains = new double[data.numAttributes()];
         Enumeration<Attribute> attEnum = data.enumerateAttributes();
         while (attEnum.hasMoreElements()) {
             Attribute att = attEnum.nextElement();
+            System.out.println("Att name: " + att.name() + ", values:" + att.numValues() + att.toString());
             infoGains[att.index()] = computeInfoGain(data, att);
         }
         return infoGains;
@@ -172,6 +177,7 @@ public class MyC45 extends AbstractClassifier {
 
     private double[] enumerateGainRatio(Instances data)
             throws Exception {
+        System.out.println("=================ENUMERATE GAIN RATIO=============");
         double[] gainRatios = new double[data.numAttributes()];
         Enumeration<Attribute> attEnum = data.enumerateAttributes();
         while (attEnum.hasMoreElements()) {
@@ -209,9 +215,9 @@ public class MyC45 extends AbstractClassifier {
             return;
         }
 
-        this.m_infoGainData = enumerateInfoGain(instances);
-        this.m_Attribute = instances.attribute(Utils.maxIndex(m_infoGainData));
-        if (Utils.eq(this.m_infoGainData[m_Attribute.index()], 0)) {
+        this.m_gainRatioData = enumerateGainRatio(instances);
+        this.m_Attribute = instances.attribute(Utils.maxIndex(m_gainRatioData));
+        if (Utils.eq(this.m_gainRatioData[m_Attribute.index()], 0)) {
             // Max Info Gain = 0
             m_Attribute = null;
             m_Distribution = new double[instances.numClasses()];
@@ -239,7 +245,7 @@ public class MyC45 extends AbstractClassifier {
         i = new Instances(i);
         i.deleteWithMissingClass();
         i = replaceMissingValues(i);
-        //i = handleContinuousValue(i);
+        i = handleContinuousValue(i);
         makeTree(i);
         
         //Prune the tree
