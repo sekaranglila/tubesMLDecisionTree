@@ -7,6 +7,7 @@ package classifier;
 
 import java.util.Enumeration;
 import weka.classifiers.AbstractClassifier;
+import weka.classifiers.trees.j48.Distribution;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -44,6 +45,8 @@ public class MyC45 extends AbstractClassifier {
      * Class attribute of dataset.
      */
     private Attribute m_ClassAttribute;
+    
+    private double m_splitPoint = Double.MAX_VALUE;
 
     /**
      * Computes the entropy of a dataset.
@@ -259,9 +262,103 @@ public class MyC45 extends AbstractClassifier {
         replacedData = Filter.useFilter(data, filter);
     }
     
-    private void splitContinuousValue(Instances data) {
-    // didescretize aja gabole ya
-    // defaultnya pake binary split yang di binc45 something itu
+    private void splitContinuousValue(Instances data) throws Exception{
+        //Kamus
+        int firstMiss;
+        int next = 1;
+        int last = 0;
+        int splitIndex = -1;
+        double currentInfoGain;
+        double defaultEnt;
+        double minSplit;
+        Instance instance;
+        int i;
+        Distribution m_dist;
+
+        //Algoritma
+        // Current attribute is a numeric attribute.
+        m_dist = new Distribution(2,data.numClasses());
+
+        // Only Instances with known values are relevant.
+        Enumeration enu = data.enumerateInstances();
+        i = 0;
+        while (enu.hasMoreElements()) {
+          instance = (Instance) enu.nextElement();
+          if (instance.isMissing(m_Attribute.index())) {
+            break;
+          }
+          m_dist.add(1, instance);
+          i++;
+        }
+        firstMiss = i;
+
+        // Compute minimum number of Instances required in each subset.
+        minSplit =  0.1 * (m_dist.total()) / ((double)data.numClasses());
+        if (Utils.smOrEq(minSplit, m_minNoObj)) {
+          minSplit = m_minNoObj;
+        } else {
+          if (Utils.gr(minSplit, 25)) {
+            minSplit = 25;
+          }
+        }
+
+        // Enough Instances with known values?
+        if (Utils.sm((double)firstMiss, (2 * minSplit))) {
+          return;
+        }
+
+        // Compute values of criteria for all possible split
+        // indices.
+        defaultEnt = infoGainCrit.oldEnt(m_dist);
+        while (next < firstMiss) {
+          if (data.instance(next-1).value(m_Attribute.index()) + 1e-5 < data.instance(next).value(m_Attribute.index())) { 
+
+            // Move class values for all Instances up to next possible split point.
+            m_dist.shiftRange(1,0,data,last,next);
+
+            // Check if enough Instances in each subset and compute
+            // values for criteria.
+            if (Utils.grOrEq(m_dist.perBag(0),minSplit) && Utils.grOrEq(m_dist.perBag(1),minSplit)) {
+              currentInfoGain = infoGainCrit.splitCritValue(m_dist,m_sumOfWeights,defaultEnt);
+              if (Utils.gr(currentInfoGain,m_infoGain)) {
+                m_infoGain = currentInfoGain;
+                splitIndex = next-1;
+              }
+              m_index++;
+            }
+            last = next;
+          }
+          next++;
+        }
+
+        // Was there any useful split?
+        if (m_index == 0) {
+          return;
+        }
+
+        // Compute modified information gain for best split.
+        m_infoGain = m_infoGain - (Utils.log2(m_index)/m_sumOfWeights);
+        if (Utils.smOrEq(m_infoGain,0)) {
+          return;
+        }
+
+        // Set instance variables' values to values for best split.
+        m_numSubsets = 2;
+        m_splitPoint =  (data.instance(splitIndex+1).value(m_Attribute.index()) + data.instance(splitIndex).value(m_Attribute.index()))/2;
+
+        // In case we have a numerical precision problem we need to choose the
+        // smaller value
+        if (m_splitPoint == data.instance(splitIndex + 1).value(m_Attribute.index())) {
+          m_splitPoint = data.instance(splitIndex).value(m_Attribute.index());
+        }
+
+        // Restore distributioN for best split.
+        m_dist = new Distribution(2,data.numClasses());
+        m_dist.addRange(0,data,0,splitIndex+1);
+        m_dist.addRange(1,data,splitIndex+1,firstMiss);
+
+        // Compute modified gain ratio for best split.
+        m_gainRatio = gainRatioCrit.splitCritValue(m_dist, m_sumOfWeights, m_infoGain);
     }
     
     private void pruneTree(Instances data) {
