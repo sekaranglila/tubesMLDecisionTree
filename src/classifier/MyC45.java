@@ -177,16 +177,6 @@ public class MyC45 extends AbstractClassifier {
             }
         }
     }
-    
-    private Instances replaceMissingValues(Instances data) throws Exception {
-        Instances replacedData;
-        ReplaceMissingValues filter = new ReplaceMissingValues();
-
-        filter.setInputFormat(data);
-        replacedData = Filter.useFilter(data, filter);
-
-        return replacedData;
-    }
 
     //Masih harus di edit
     @Override
@@ -261,9 +251,12 @@ public class MyC45 extends AbstractClassifier {
         return text.toString();
     }
     
-    private void replaceMissingValue(Instances data) {
-    // Replace jadi most common value
-    
+    private void replaceMissingValues(Instances data) throws Exception {
+        Instances replacedData;
+        ReplaceMissingValues filter = new ReplaceMissingValues();
+
+        filter.setInputFormat(data);
+        replacedData = Filter.useFilter(data, filter);
     }
     
     private void splitContinuousValue(Instances data) {
