@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import weka.classifiers.Classifier;
+import weka.classifiers.Evaluation;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.trees.j48.Distribution;
 import weka.classifiers.trees.j48.GainRatioSplitCrit;
@@ -239,6 +241,9 @@ public class MyC45 extends AbstractClassifier {
         i = replaceMissingValues(i);
         //i = handleContinuousValue(i);
         makeTree(i);
+        
+        //Prune the tree
+        pruneTree(i);
     }
 
     @Override
@@ -480,8 +485,49 @@ public class MyC45 extends AbstractClassifier {
     }
 
     private void pruneTree(Instances data) {
+        
+        if (this.node != null) {
+            // Copy current model to a test model
+            // Test and current model will be compared later
+            // Test model is a pruned current model (no further child, leaf is most common value
+            MyC45 testModel = new MyC45();
+            testModel = this;
+            testModel.node = null;
+            testModel.m_ClassValue = mostCommonValue(data);
+            
+            Classifier prePruning = this;
+            Classifier postPruning = testModel;
+            double errPrePrune = 0.0;
+            double errPostPrune = 0.0;
+            
+            // Get error for pruned model and current model
+            try {
+                Evaluation eval = new Evaluation(data);
+                eval.evaluateModel(prePruning, data);
+                errPrePrune = eval.errorRate();
 
+                eval.evaluateModel(postPruning, data);
+                errPostPrune = eval.errorRate();
+                System.out.println("err before: " + errPrePrune + ", err after: " + errPostPrune);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            
+            // If pruned model is better, change current to pruned
+            if (errPrePrune > errPostPrune) {
+                this.m_ClassValue = mostCommonValue(data);
+                this.node = null;
+                this.m_Attribute = null;
+            }
+            
+            // Prune child if any
+            if (this.node != null) {
+                Instances[] splitted = splitData(data, this.m_Attribute);
+
+                for (int i = 0; i < this.node.length; i++)
+                    this.node[i].pruneTree(splitted[i]);
+            }
+        }
     }
 
-    // Error handling masih belom gt ngerti soalnya ada beberapa jenisnya
 }
